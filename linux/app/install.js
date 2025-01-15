@@ -86,15 +86,19 @@ function application() {
         return reject(e);
       }
       const isNode = process.argv.filter(a => a === '--add_node').length === 0;
-      const run = `#!/usr/bin/env bash\n${isNode ? process.argv[0] : './node'} host.js`;
+
+      const run = `#!/usr/bin/env bash\n${isNode ? process.argv[0] : './node'} $(dirname "$0")/host.js`;
       fs.writeFile(path.join(dir, 'run.sh'), run, e => {
         if (e) {
           return reject(e);
         }
         fs.chmodSync(path.join(dir, 'run.sh'), '0755');
         if (!isNode) {
-          fs.createReadStream(process.argv[0]).pipe(fs.createWriteStream(path.join(dir, 'node')));
-          fs.chmodSync(path.join(dir, 'node'), '0755');
+          const stream = fs.createReadStream(process.argv[0]);
+          stream.on('close', () => {
+            fs.chmodSync(path.join(dir, 'node'), '0755');
+          });
+          stream.pipe(fs.createWriteStream(path.join(dir, 'node')));
         }
         fs.createReadStream('host.js').pipe(fs.createWriteStream(path.join(dir, 'host.js')));
         fs.createReadStream('messaging.js').pipe(fs.createWriteStream(path.join(dir, 'messaging.js')));
