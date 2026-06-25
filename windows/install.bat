@@ -7,33 +7,36 @@ pushd "%~dp0" || (
   exit /b 1
 )
 
-CD app || (
-    echo Failed to enter app directory
-    pause
-    exit /b 1
-)
+:: Always resolve script directory separately (may be read-only)
+set "SCRIPT_DIR=%CD%"
+set "APP_DIR=%SCRIPT_DIR%\app"
+
+:: Move all writable work to TEMP
+set "WORK_DIR=%TEMP%\node-installer-%RANDOM%"
+set "TEMP_DIR=%WORK_DIR%\temp"
+set "DEST_DIR=%WORK_DIR%\node"
+
+mkdir "%WORK_DIR%" >nul 2>&1
+mkdir "%TEMP_DIR%" >nul 2>&1
 
 SET PATH=C:\Windows\System32;%PATH%
 
-:: Node.js version and URL base
 set NODE_VERSION=v18.20.5
 set BASE_URL=https://nodejs.org/download/release/%NODE_VERSION%/
 set ARCHIVE_NAME=
 set ARCHIVE_DIR=
-set DEST_DIR=node
-set TEMP_DIR=node
 
-IF NOT EXIST "%~dp0\app\install.js" (
+IF NOT EXIST "%APP_DIR%\install.js" (
   echo [ERROR] To run the installer, please first unzip the archive
   pause
   exit /b 1
 )
 
-:: Check if system Node.js exists
+:: Check system Node.js
 WHERE node >nul 2>&1
 IF %ERRORLEVEL%==0 (
   echo .. Using system Node.js
-  node install.js "%LocalAPPData%"
+  node "%APP_DIR%\install.js" "%LocalAPPData%"
   if errorlevel 1 (
     echo Failed to run install.js with system Node.js
     pause
@@ -42,13 +45,8 @@ IF %ERRORLEVEL%==0 (
   GOTO :REGISTRY
 )
 
-:: Otherwise, fallback to downloading Node.js
 echo .. System Node.js not found, downloading portable version...
 
-:: Create temp directory
-if not exist "%TEMP_DIR%" mkdir "%TEMP_DIR%"
-
-:: Determine architecture
 IF "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
   set ARCHIVE_NAME=node-%NODE_VERSION%-win-x64.zip
   set ARCHIVE_DIR=node-%NODE_VERSION%-win-x64
@@ -57,41 +55,40 @@ IF "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
   set ARCHIVE_DIR=node-%NODE_VERSION%-win-x86
 )
 
-:: Download Node.js archive
 echo .. Downloading %BASE_URL%%ARCHIVE_NAME%
+
 WHERE curl >nul 2>&1
 if %errorlevel%==0 (
     curl -k -o "%TEMP_DIR%\%ARCHIVE_NAME%" "%BASE_URL%%ARCHIVE_NAME%"
 ) else (
     powershell -Command ^
-      "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};" ^
-      "Invoke-WebRequest -Uri '%BASE_URL%%ARCHIVE_NAME%' -OutFile '%TEMP_DIR%\%ARCHIVE_NAME%' -UseBasicParsing"
+      "Invoke-WebRequest -Uri '%BASE_URL%%ARCHIVE_NAME%' -OutFile '%TEMP_DIR%\%ARCHIVE_NAME%'"
 )
+
 if errorlevel 1 (
   echo Failed to download %ARCHIVE_NAME%
   pause
   exit /b 1
 )
 
-:: Extract archive
 echo .. Extracting %ARCHIVE_NAME%...
 powershell -Command "Expand-Archive -Path '%TEMP_DIR%\%ARCHIVE_NAME%' -DestinationPath '%DEST_DIR%' -Force"
+
 if errorlevel 1 (
   echo Failed to extract %ARCHIVE_NAME%
   pause
   exit /b 1
 )
 
-:: Run install.js with portable Node.js
-"%DEST_DIR%\%ARCHIVE_DIR%\node.exe" install.js "%LocalAPPData%"
+"%DEST_DIR%\%ARCHIVE_DIR%\node.exe" "%APP_DIR%\install.js" "%LocalAPPData%"
 if errorlevel 1 (
   echo Failed to run install.js with portable Node.js
   pause
   exit /b 1
 )
 
-:: Cleanup
-rmdir /s /q "%TEMP_DIR%" 2>nul
+:: Cleanup (safe because it's in TEMP now)
+rmdir /s /q "%WORK_DIR%" 2>nul
 
 :REGISTRY
 echo.

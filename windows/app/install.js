@@ -3,6 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
+process.chdir(__dirname);
+
 function exists(directory, callback) {
   fs.stat(directory, e => {
     if (e && e.code === 'ENOENT') {
@@ -14,9 +16,10 @@ function exists(directory, callback) {
   });
 }
 
-const dir = path.join(process.argv[2], 'com.add0n.node');
 const name = 'com.add0n.node';
-const ids = require('./config.js').ids;
+const dir = path.join(process.argv[2], name);
+
+const ids = require(path.join(__dirname, 'config.js')).ids;
 
 function manifest(type) {
   return new Promise((resolve, reject) => {
@@ -63,7 +66,9 @@ ${copyNode ? '"%~dp0node.exe"' : 'node.exe'} "%~dp0host.js"`, e => {
         try {
           fs.createReadStream(process.argv[0]).pipe(fs.createWriteStream(path.join(dir, 'node.exe')));
         }
-        catch (e) {}
+        catch (e) {
+          console.error('Cannot copy NodeJS', e);
+        }
       }
       resolve();
     });
