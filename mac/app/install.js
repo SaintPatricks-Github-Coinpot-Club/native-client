@@ -112,38 +112,43 @@ function application(callback) {
   });
 }
 
-const support = (name, type = 'browser') => {
-  console.log(' -> \x1b[1m' + name + '\x1b[0m ' + type + ' is supported');
+const support = (name, type = 'browser', e) => {
+  if (e) {
+    console.log(' -> \x1b[1m' + name + '\x1b[0m ' + type + ' is NOT supported - ' + e.message);
+  }
+  else {
+    console.log(' -> \x1b[1m' + name + '\x1b[0m ' + type + ' is supported');
+  }
 };
 
 async function chrome() {
   if (config.ids.chrome.length) {
     const LAS = 'Library/Application Support';
-    await manifest(path.join(process.env.HOME, LAS, 'Google/Chrome/NativeMessagingHosts'), 'chrome');
-    support('Chrome');
-    await manifest(path.join(process.env.HOME, LAS, 'Chromium/NativeMessagingHosts'), 'chrome');
-    support('Chromium');
-    await manifest(path.join(process.env.HOME, LAS, 'Vivaldi/NativeMessagingHosts'), 'chrome');
-    support('Vivaldi');
-    await manifest(path.join(process.env.HOME, LAS, 'BraveSoftware/Brave-Browser/NativeMessagingHosts'), 'chrome');
-    support('Brave');
+    await manifest(path.join(process.env.HOME, LAS, 'Google/Chrome/NativeMessagingHosts'), 'chrome')
+      .then(() => support('Chrome')).catch(e => support('Chrome', 'browser', e));
+    await manifest(path.join(process.env.HOME, LAS, 'Chromium/NativeMessagingHosts'), 'chrome')
+      .then(() => support('Chromium')).catch(e => support('Chromium', 'browser', e));
+    await manifest(path.join(process.env.HOME, LAS, 'Vivaldi/NativeMessagingHosts'), 'chrome')
+      .then(() => support('Vivaldi')).catch(e => support('Vivaldi', 'browser', e));
+    await manifest(path.join(process.env.HOME, LAS, 'BraveSoftware/Brave-Browser/NativeMessagingHosts'), 'chrome')
+      .then(() => support('Brave')).catch(e => support('Brave', 'browser', e));
     await manifest(path.join(process.env.HOME, LAS, 'Microsoft Edge/NativeMessagingHosts'), 'chrome');
-    support('Microsoft Edge');
-    await manifest(path.join(process.env.HOME, LAS, 'Comet/NativeMessagingHosts'), 'chrome');
-    support('Perplexity Comet');
+      .then(() => support('Microsoft Edge')).catch(e => support('Microsoft Edge', 'browser', e));
+    await manifest(path.join(process.env.HOME, LAS, 'Comet/NativeMessagingHosts'), 'chrome')
+      .then(() => support('Perplexity Comet')).catch(e => support('Perplexity Comet', 'browser', e));
   }
 }
 async function firefox() {
   if (config.ids.firefox.length) {
     const LAS = 'Library/Application Support';
-    await manifest(path.join(process.env.HOME, LAS, 'Mozilla/NativeMessagingHosts'), 'firefox');
-    support('Firefox');
-    await manifest(path.join(process.env.HOME, LAS, 'Waterfox/NativeMessagingHosts'), 'firefox');
-    support('Waterfox');
-    await manifest(path.join(process.env.HOME, LAS, 'TorBrowser-Data/Browser/Mozilla/NativeMessagingHosts'), 'firefox');
-    support('Tor');
-    await manifest(path.join(process.env.HOME, LAS, 'Thunderbird/NativeMessagingHosts'), 'firefox');
-    support('Thunderbird', 'email client');
+    await manifest(path.join(process.env.HOME, LAS, 'Mozilla/NativeMessagingHosts'), 'firefox')
+      .then(() => support('Firefox')).catch(e => support('Firefox', 'browser', e));
+    await manifest(path.join(process.env.HOME, LAS, 'Waterfox/NativeMessagingHosts'), 'firefox')
+      .then(() => support('Waterfox')).catch(e => support('Waterfox', 'browser', e));
+    await manifest(path.join(process.env.HOME, LAS, 'TorBrowser-Data/Browser/Mozilla/NativeMessagingHosts'), 'firefox')
+      .then(() => support('Tor')).catch(e => support('Tor', 'browser', e));
+    await manifest(path.join(process.env.HOME, LAS, 'Thunderbird/NativeMessagingHosts'), 'firefox')
+      .then(() => support('Thunderbird', 'email client')).catch(e => support('Thunderbird', 'email client', e));
   }
 }
 
